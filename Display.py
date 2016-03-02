@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import QUIT, KEYDOWN
 from pygame.draw import arc
 from random import randrange
+import time
 
 
 class Screen(object):
@@ -9,27 +10,18 @@ class Screen(object):
 	def __init__(self, model, size):
 		self.model = model
 		self.screen = pygame.display.set_mode(size)
+		self.base_rect = (500,400,300,300)
 
 	def draw(self):
 		self.screen.fill(pygame.Color('black'))
-		for arc in self.model.arcs:
-			arc = pygame.draw.arc()
-
-class PieGraphModel(object):
-	"""The pictoral representation for the pie graph"""
-	class Slice(object):
-		"""Stores the data for a pie slice"""
-		def __init__(start_angle, label, percent):
-			pass
-	def __init__(x,y,rect,pie):
-		self.x = x
-		self.y = y
-		self.rectangle = rect
-		self.pie = pie
-		#self.color = (randrange(256),randrange(256),randrange(256))
-	def get_arcs(self):
-		"""Returns a list of dictionaries.
-			keys: color, start_angle, stop_angle,"""
+		for arc in self.model.get_arcs():
+			pygame.draw.arc(
+				self.screen,
+				arc['color'],
+				self.base_rect, 
+				arc['start_angle'],
+				arc['stop_angle'])
+		pygame.display.update()
 
 class PieGraph(object):
 	"""Stores the data for the graph to display (as a dictionary)"""
@@ -91,7 +83,7 @@ if __name__ == '__main__':
 	pygame.init()
 	size = (1000, 800)
 
-	model = PieGrapherModel(size)
+	model = PieGraph()
 	view = Screen(model, size)
 	controller = EventController(model)
 	running = True
@@ -101,3 +93,5 @@ if __name__ == '__main__':
 				running = False
 			#else:
 			#	EventController.handle_event()
+		time.sleep(float(1/60))
+	
