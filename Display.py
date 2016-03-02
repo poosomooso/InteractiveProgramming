@@ -3,7 +3,7 @@ from pygame.locals import QUIT, KEYDOWN
 from pygame.draw import arc
 from random import randrange
 import time
-
+from math import pi
 
 class Screen(object):
 	"""has a screen, takes in models to draw, keyboard control, if applicable"""
@@ -28,6 +28,7 @@ class PieGraph(object):
 	def __init__(self):
 		self.data = {}
 		self.raw_total = 0
+		self.arcs = []
 
 	def add_slice(self, label, value):
 		"""Takes a label as String and a value as a float or int. Adds to 
@@ -65,6 +66,25 @@ class PieGraph(object):
 		for k in self.data.keys():
 			perc[k]=(float(self.data[k])/self.raw_total)
 		return sorted(perc.items(),key=lambda x:x[1],reverse=True)
+	def update_arcs(self):
+		"""makes a new list of dictionaries based on the current data in the PieGraph.
+			Stores a list of dictionaries.
+			keys: color, label, start_angle, stop_angle"""
+		self.arcs = []
+		curr_angle = pi/2
+		for t in self.calculate_percent():
+			d = {}
+			d['color'] = (randrange(256),randrange(256),randrange(256))
+			d['label'] = t[0]
+			d['start_angle']=curr_angle
+			d['end_angle']=curr_angle-(2*pi*t[1])
+			curr_angle = d['end_angle']
+			self.arcs.append(d)
+
+	def get_arcs(self):
+		"""Returns a list of dictionaries.
+			keys: color, label, start_angle, stop_angle,"""
+		return self.arcs
 
 	def __str__(self):
 		"""Returns the String representation of the graph"""
@@ -80,6 +100,14 @@ class EventController(object):
 if __name__ == '__main__':
 	import doctest
 	doctest.testmod()
+	pg = PieGraph()
+	pg.add_slice('one', 1)
+	pg.add_slice('three', 3)
+	pg.modify_slice('one', 4)
+	print pg
+	pg.update_arcs()
+	print pg.get_arcs()
+
 	pygame.init()
 	size = (1000, 800)
 
@@ -94,4 +122,3 @@ if __name__ == '__main__':
 			#else:
 			#	EventController.handle_event()
 		time.sleep(float(1/60))
-	
