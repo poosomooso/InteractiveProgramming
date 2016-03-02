@@ -1,0 +1,10 @@
+- pygame display
+	- screen class
+		-draw screen
+	- event controller
+		- key event
+	- graph class
+		- arcs
+
+
+- data parser
