@@ -6,6 +6,7 @@ import time
 from math import pi, sin, cos
 import doctest
 import Tkinter as t
+import tkMessageBox
 
 
 class Screen(object):
@@ -111,7 +112,7 @@ class PieGraph(object):
 		return str(self.calculate_percent())
 
 class input_menu(object):
-	def __init__(self, pg):
+	def __init__(self, pg, view):
 		self.main_window = t.Tk()
 
 		self.frame = t.Frame(self.main_window)
@@ -130,8 +131,15 @@ class input_menu(object):
 
 	def add(self):
 		pg.add_slice(self.name_var.get(), self.val_var.get())
-		pg.update_arcs()
-		self.main_window.destroy()
+		try:
+			pg.update_arcs()
+			self.main_window.destroy()
+			view.draw()
+		except:
+			tkMessageBox.showwarning(
+            "!!Error!!",
+            "Invalid Data"
+        )
 
 if __name__ == '__main__':
 	
@@ -141,15 +149,13 @@ if __name__ == '__main__':
 	size = (1000, 1000)
 	model = pg
 	view = Screen(model, size)
-	controller = EventController(model)
 	running = True
-	menu = input_menu(pg)
+	menu = input_menu(pg, view)
 	while running:
 		for event in pygame.event.get():
 			if event.type == QUIT:
 				running = False
 			if event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_RETURN:
-					input_menu(pg)
-		view.draw()
+					input_menu(pg, view)
 		time.sleep(float(1/60))
