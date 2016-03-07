@@ -11,7 +11,8 @@ import tkMessageBox
 
 
 class Screen(object):
-	"""has a screen, takes in models to draw, keyboard control, if applicable"""
+	"""has a screen, takes in mo
+	dels to draw, keyboard control, if applicable"""
 	def __init__(self, model, size):
 		self.model = model
 		self.screen = pygame.display.set_mode(size)
