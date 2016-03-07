@@ -4,6 +4,7 @@ from pygame.draw import arc
 from random import randrange
 import time
 from math import pi, sin, cos
+from numpy import arange
 import doctest
 
 class Screen(object):
@@ -24,15 +25,18 @@ class Screen(object):
 				self.base_rect, 
 				arc['start_angle'],
 				arc['stop_angle'],
-				self.radius)
+				self.radius/2)
+			cx = self.base_rect.centerx
+			cy = self.base_rect.centery
+			for theta in arange(arc['start_angle'],arc['stop_angle'],.00005):
+				pygame.draw.line(self.screen, col, (cx,cy), (self.radius*cos(theta)+cx,-1*self.radius*sin(theta)+cy))
 			font = pygame.font.Font('DINOT-Bold.otf',30)
 			words = font.render(arc['label'],True, (0,0,0))
 
-			# (hypot)sin(theta) = dy
-			# (hypot)cos(theta) = dx
-			pos = (self.base_rect.centerx + int(self.radius*cos((arc['start_angle']+arc['stop_angle'])/2.0)/2),
-					self.base_rect.centery - int(self.radius*sin((arc['start_angle']+arc['stop_angle'])/2.0)/2))
-			pygame.draw.rect(self.screen, (col[0]+40,col[1]+40,col[2]+40), (pos[0],pos[1],words.get_width(),words.get_height()))
+			pos = (cx + int(self.radius*cos((arc['start_angle']+arc['stop_angle'])/2.0)/2),
+					cy - int(self.radius*sin((arc['start_angle']+arc['stop_angle'])/2.0)/2))
+			pygame.draw.rect(self.screen, (col[0]+20,col[1]+20,col[2]+20), (pos[0],pos[1],words.get_width(),words.get_height()))
+			
 			self.screen.blit(words,pos)
 
 		pygame.display.update()
@@ -97,7 +101,7 @@ class PieGraph(object):
 			d['stop_angle']=curr_angle+(2*pi*t[1])
 			curr_angle = d['stop_angle']
 			self.arcs.append(d)
-		self.arcs[-1]['stop_angle']=5*pi/2+.04
+		self.arcs[-1]['stop_angle']=5*pi/2
 
 	def get_arcs(self):
 		"""Returns a list of dictionaries.
@@ -120,8 +124,9 @@ if __name__ == '__main__':
 	doctest.testmod()
 	pg = PieGraph()
 	pg.add_slice('one', 1)
-	pg.add_slice('three', 9)
-	pg.modify_slice('one', 4)
+	pg.add_slice('three', 3)
+	pg.add_slice('two',2)
+	#pg.modify_slice('one', 4)
 	print pg
 	pg.update_arcs()
 	print pg.get_arcs()
