@@ -5,6 +5,8 @@ from random import randrange
 import time
 from math import pi, sin, cos
 import doctest
+import Tkinter as t
+
 
 class Screen(object):
 	"""has a screen, takes in models to draw, keyboard control, if applicable"""
@@ -108,36 +110,46 @@ class PieGraph(object):
 		"""Returns the String representation of the graph"""
 		return str(self.calculate_percent())
 
-class EventController(object):
-	"""handles keyboard and mouse input, using the handle_event method"""
-	def __init__(self, model):
-		self.model = model
+class input_menu(object):
+	def __init__(self, pg):
+		self.main_window = t.Tk()
 
+		self.frame = t.Frame(self.main_window)
+		self.name_var = t.StringVar()
+		self.val_var = t.DoubleVar()
 
+		self.tbox = t.Entry(self.frame, width=7, textvariable=self.name_var, text = 'Name: ')
+		self.val = t.Entry(self.frame, width = 4, textvariable=self.val_var, text = 'Value: ')
+		self.bt1 = t.Button(self.frame, text = 'Enter', command = self.add)
+
+		self.tbox.pack()
+		self.val.pack()
+		self.bt1.pack()
+		self.frame.pack()
+		t.mainloop()
+
+	def add(self):
+		pg.add_slice(self.name_var.get(), self.val_var.get())
+		pg.update_arcs()
+		self.main_window.destroy()
 
 if __name__ == '__main__':
 	
 	doctest.testmod()
 	pg = PieGraph()
-	pg.add_slice('one', 1)
-	pg.add_slice('three', 9)
-	pg.modify_slice('one', 4)
-	print pg
-	pg.update_arcs()
-	print pg.get_arcs()
-
 	pygame.init()
 	size = (1000, 1000)
-
 	model = pg
 	view = Screen(model, size)
 	controller = EventController(model)
 	running = True
+	menu = input_menu(pg)
 	while running:
 		for event in pygame.event.get():
 			if event.type == QUIT:
 				running = False
-			#else:
-			#	EventController.handle_event()
+			if event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_RETURN:
+					input_menu(pg)
 		view.draw()
 		time.sleep(float(1/60))
