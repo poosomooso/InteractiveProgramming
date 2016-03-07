@@ -1,0 +1,19 @@
+Project Proposal
+Carl Moser and Serena Chen
+
+Our idea is to make an iSpy or Where's Waldo type of game, where the user inputs what to look for and the progam uses OpenCV to find the object. Our (very) minimum viable product is a grid where there are a few pictures on white background, and the user chooses a word and the program marks the image. From there we will add:
+
+-Searching the word that the user inputs using Google Images, processing those images, and find the box in the main picture that most likely represents that word.
+
+-Having images of variable size with arbitrary spacing with respect to the other objects in the picture
+
+-Allowing the user to pick a language, and implementing with different languages (using Google Images of different languages)
+
+Our learning goals are to learn to use OpenCV. We haven't looked that much into it, so we don't know how black-boxed the algorithms behind our project will be, but we hope that we learn some of the machine learning algorithms.
+
+We are planning to use OpenCV and other libraries that will allow us to grab pictures from the internet and create a user interface.
+
+We plan to play around with the libraries and make good progress on our very MVP.
+
+One of our biggest risks is not being able to use Google Search for images. If we are not successful, we might go to the Where's Waldo idea, where we are only searching for a single image every time.
+
