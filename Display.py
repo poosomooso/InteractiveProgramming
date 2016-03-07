@@ -145,21 +145,23 @@ class input_menu(object):
             "Invalid Data"
         )
 
+def deal_with_event(event):
+	if event.type == QUIT:
+		return True
+	if event.type == pygame.KEYDOWN:
+		if event.key == pygame.K_RETURN:
+			input_menu(pg, view)
+		elif event.key == pygame.K_s:
+			pygame.image.save(view.screen, "screenshot.jpeg")
+
 if __name__ == '__main__':
-	
 	doctest.testmod()
 	pg = PieGraph()
 	pygame.init()
-	size = (1000, 1000)
-	model = pg
-	view = Screen(model, size)
+	view = Screen(pg, (1000, 1000))
 	running = True
 	menu = input_menu(pg, view)
 	while running:
 		for event in pygame.event.get():
-			if event.type == QUIT:
-				running = False
-			if event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_RETURN:
-					input_menu(pg, view)
+			running = not deal_with_event(event)
 		time.sleep(float(1/60))
