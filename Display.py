@@ -134,8 +134,8 @@ class input_menu(object):
 		t.mainloop()
 
 	def add(self):
-		pg.add_slice(self.name_var.get(), self.val_var.get())
 		try:
+			pg.add_slice(self.name_var.get(), self.val_var.get())
 			pg.update_arcs()
 			self.main_window.destroy()
 			view.draw()
