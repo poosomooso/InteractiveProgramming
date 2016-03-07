@@ -13,7 +13,7 @@ class Screen(object):
 		self.base_rect = (100,100,800,800)
 
 	def draw(self):
-		self.screen.fill(pygame.Color('white'))
+		self.screen.fill(pygame.Color('black'))
 		for arc in self.model.get_arcs():
 			pygame.draw.arc(
 				self.screen,
@@ -105,7 +105,7 @@ if __name__ == '__main__':
 	doctest.testmod()
 	pg = PieGraph()
 	pg.add_slice('one', 1)
-	pg.add_slice('three', 3)
+	pg.add_slice('three', 9)
 	pg.modify_slice('one', 4)
 	print pg
 	pg.update_arcs()
