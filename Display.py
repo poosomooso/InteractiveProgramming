@@ -3,25 +3,39 @@ from pygame.locals import QUIT, KEYDOWN
 from pygame.draw import arc
 from random import randrange
 import time
-from math import pi
+from math import pi, sin, cos
+import doctest
 
 class Screen(object):
 	"""has a screen, takes in models to draw, keyboard control, if applicable"""
 	def __init__(self, model, size):
 		self.model = model
 		self.screen = pygame.display.set_mode(size)
-		self.base_rect = (100,100,800,800)
+		self.radius = 400
+		self.base_rect = pygame.Rect(100,100,self.radius*2,self.radius*2)
 
 	def draw(self):
-		self.screen.fill(pygame.Color('black'))
+		self.screen.fill((0,0,0))
 		for arc in self.model.get_arcs():
+			col = arc['color']
 			pygame.draw.arc(
 				self.screen,
-				arc['color'],
+				col,
 				self.base_rect, 
 				arc['start_angle'],
 				arc['stop_angle'],
-				400)
+				self.radius)
+			font = pygame.font.Font('DINOT-Bold.otf',30)
+			words = font.render(arc['label'],True, (0,0,0))
+
+			# (hypot)sin(theta) = dy
+			# (hypot)cos(theta) = dx
+			pos = (self.base_rect.centerx + int(self.radius*cos((arc['start_angle']+arc['stop_angle'])/2.0)/2),
+					self.base_rect.centery - int(self.radius*sin((arc['start_angle']+arc['stop_angle'])/2.0)/2))
+			pygame.draw.rect(self.screen, (col[0]+40,col[1]+40,col[2]+40), (pos[0],pos[1],words.get_width(),words.get_height()))
+			self.screen.blit(words,pos)
+
+		pygame.display.update()
 		pygame.display.update()
 
 class PieGraph(object):
@@ -40,7 +54,7 @@ class PieGraph(object):
 			"[('one', 1.0)]"
 			>>> pg.add_slice('three', 3)
 			>>> str(pg)
-			"[('three', 0.75), ('one', 0.25)]"
+			"[('one', 0.25), ('three', 0.75)]"
 		""" 
 		self.data[label]=value
 		self.raw_total+=value
@@ -53,7 +67,7 @@ class PieGraph(object):
 			>>> pg.add_slice('three', 3)
 			>>> pg.modify_slice('one', 4)
 			>>> str(pg)
-			"[('one', 0.625), ('three', 0.375)]"
+			"[('three', 0.375), ('one', 0.625)]"
 		""" 
 		self.data[label]+=dv
 		self.raw_total+=dv
@@ -76,13 +90,14 @@ class PieGraph(object):
 		curr_angle = pi/2
 		for t in self.calculate_percent():
 			d = {}
-			d['color'] = (randrange(256),randrange(256),randrange(256), 255)
+			#ensure darker colors
+			d['color'] = (randrange(40,210),randrange(40,210),randrange(40,210), 255)
 			d['label'] = t[0]
 			d['start_angle']=curr_angle
 			d['stop_angle']=curr_angle+(2*pi*t[1])
 			curr_angle = d['stop_angle']
 			self.arcs.append(d)
-			self.arcs[-1]['stop_angle']=5*pi/2+.04
+		self.arcs[-1]['stop_angle']=5*pi/2+.04
 
 	def get_arcs(self):
 		"""Returns a list of dictionaries.
@@ -101,7 +116,7 @@ class EventController(object):
 
 
 if __name__ == '__main__':
-	import doctest
+	
 	doctest.testmod()
 	pg = PieGraph()
 	pg.add_slice('one', 1)
