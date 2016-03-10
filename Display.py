@@ -291,6 +291,29 @@ class init_menu(object):
 			"!!Error!!",
 			"INITInvalid Data\n"+str(e)
 		)
+def deal_with_event(event,pie,screen):
+		"""Handles events such as exiting, saving a screenshot, inputting a new entry, and modifying an existing entry"""
+		if event.type == QUIT:
+			return True
+		if event.type == pygame.KEYDOWN:
+			if event.key == pygame.K_RETURN:
+				#input a new entry
+				input_menu(pie, screen)
+			elif event.key == pygame.K_s:
+				#remove the commands
+				pygame.draw.rect(screen.screen, (0,0,0), (0,0,1000,150))
+				#screenshot
+				pygame.image.save(screen.screen, "screenshot.jpeg")
+				#redraw commands
+				screen.draw()
+			elif event.key == pygame.K_v:
+				screen.set_raw(not screen.raw)
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			#modify a slice (if the user clicks in the right place, otherwise this doesn't do anything)
+			pos = pygame.mouse.get_pos()
+			label = screen.in_arc(pos[0],pos[1])
+			if label != None:
+				input_menu(pie,screen,label)
 
 if __name__ == '__main__':
 	doctest.testmod()
@@ -300,33 +323,8 @@ if __name__ == '__main__':
 	view = Screen(pg, (1000, 1000))
 	running = True
 	menu = init_menu(pg, view)
-
-	def deal_with_event(event):
-		"""Handles events such as exiting, saving a screenshot, inputting a new entry, and modifying an existing entry"""
-		if event.type == QUIT:
-			return True
-		if event.type == pygame.KEYDOWN:
-			if event.key == pygame.K_RETURN:
-				#input a new entry
-				input_menu(pg, view)
-			elif event.key == pygame.K_s:
-				#remove the commands
-				pygame.draw.rect(view.screen, (0,0,0), (0,0,1000,150))
-				#screenshot
-				pygame.image.save(view.screen, "screenshot.jpeg")
-				#redraw commands
-				view.draw()
-			elif event.key == pygame.K_v:
-				view.set_raw(not view.raw)
-		if event.type == pygame.MOUSEBUTTONDOWN:
-			#modify a slice (if the user clicks in the right place, otherwise this doesn't do anything)
-			pos = pygame.mouse.get_pos()
-			label = view.in_arc(pos[0],pos[1])
-			if label != None:
-				input_menu(pg,view,label)
-
 	#run forever. or quit. if that's what you want.
 	while running:
 		for event in pygame.event.get():
-			running = not deal_with_event(event)
+			running = not deal_with_event(event,pg,view)
 		time.sleep(float(1/30))
