@@ -1,9 +1,13 @@
+"""
+Carl Moser and Serena Chen
+
+Creates a GUI that allows you to make a pie graph with data that you'd like.
+"""
 import pygame
 from pygame.locals import QUIT, KEYDOWN
-from pygame.draw import arc
 from random import randrange
 import time
-from math import pi, sin, cos
+from math import pi, sin, cos, hypot, atan2
 from numpy import arange
 import doctest
 import Tkinter as t
@@ -11,18 +15,31 @@ import tkMessageBox
 
 
 class Screen(object):
-	"""Creates the screen and defines base variables for the arcs"""
+	"""Has a screen, takes in models to draw, keyboard control, if applicable"""
 	def __init__(self, model, size):
 		self.model = model
 		self.screen = pygame.display.set_mode(size)
 		self.radius = 400
-		self.base_rect = pygame.Rect(100,100,self.radius*2,self.radius*2)
+		self.base_rect = pygame.Rect(100,150,self.radius*2,self.radius*2)
 
 	def draw(self):
 		"""This function redraws the screen and updates it"""
 		self.screen.fill((0,0,0))
+
+		#Creates the command label at the top of the screen
+		font = pygame.font.Font('DINOT-Bold.otf',35)
+		commands_line1 = font.render('Press \'ENTER\' to add a data entry',True,(255,255,255))
+		commands_line2 = font.render('Click on a slice to modify it\'s existing value',True,(255,255,255))
+		commands_line3 = font.render('Press \'S\' to save a screenshot',True,(255,255,255))
+
+		self.screen.blit(commands_line1,(10,10))
+		self.screen.blit(commands_line2,(10,50))
+		self.screen.blit(commands_line3,(10,90))
+
+		#draw slices
 		for arc in self.model.get_arcs():
 			col = arc['color']
+			#draw an arc with thickness of the radius
 			pygame.draw.arc(
 				self.screen,
 				col,
@@ -32,17 +49,39 @@ class Screen(object):
 				self.radius/2)
 			cx = self.base_rect.centerx
 			cy = self.base_rect.centery
+			#draw lines coming out of the center to make up for some of the bad graphics
 			for theta in arange(arc['start_angle'],arc['stop_angle'],.00005):
 				pygame.draw.line(self.screen, col, (cx,cy), (self.radius*cos(theta)+cx,-1*self.radius*sin(theta)+cy))
-			font = pygame.font.Font('DINOT-Bold.otf',30)
-			words = font.render(arc['label'],True, (0,0,0))
 
-			pos = (cx + int(self.radius*cos((arc['start_angle']+arc['stop_angle'])/2.0)/2),
-					cy - int(self.radius*sin((arc['start_angle']+arc['stop_angle'])/2.0)/2))
+			#draw slice label
+			font_slice = pygame.font.Font('DINOT-Bold.otf',30)
+			words = font_slice.render(arc['label'],True, (0,0,0))
+
+			pos = (cx + int(self.radius*cos((arc['start_angle']+arc['stop_angle'])/2.0)/2) - words.get_width()/2,
+					cy - int(self.radius*sin((arc['start_angle']+arc['stop_angle'])/2.0)/2) - words.get_height()/2)
 			pygame.draw.rect(self.screen, (col[0]+20,col[1]+20,col[2]+20), (pos[0],pos[1],words.get_width(),words.get_height()))
 			
 			self.screen.blit(words,pos)
 		pygame.display.update()
+
+	def in_arc(self,x,y):
+		"""Determines which slice the point is in, with x and y as coordinates in the screen.
+			Returns the label of the corresponding slice, or None is it doesn't correspond to any slice"""
+		dx = x-self.base_rect.centerx
+		dy = self.base_rect.centery-y
+		hypotenuse = hypot(dx, dy)
+		if hypotenuse<=self.radius:
+			angle = atan2(dx,dy)
+			#normalizing angle to weird pygame unit circles
+			if angle<0:
+				angle+=2*pi
+			angle = 5*pi/2 - angle
+
+			for arc in self.model.get_arcs():
+				if arc['start_angle']<=angle<=arc['stop_angle']:
+					return arc['label']
+		
+			return None
 
 class PieGraph(object):
 	"""Stores the data for the graph to display (as a dictionary)"""
@@ -62,6 +101,10 @@ class PieGraph(object):
 			>>> str(pg)
 			"[('one', 0.25), ('three', 0.75)]"
 		""" 
+		if value<=0:
+			raise ValueError('Data entry requires a positive value')
+		elif label in self.data.keys():
+			raise KeyError('That entry already exists')
 		self.data[label]=value
 		self.raw_total+=value
 
@@ -75,8 +118,14 @@ class PieGraph(object):
 			>>> str(pg)
 			"[('three', 0.375), ('one', 0.625)]"
 		""" 
-		self.data[label]+=dv
-		self.raw_total+=dv
+		if self.data[label] + dv<=0:
+			del self.data[label]
+		else:
+			self.data[label]+=dv
+			self.raw_total+=dv
+
+	def has_slice(self, label):
+		return label in self.data.keys()
 
 	def calculate_percent(self):
 		"""Calculates what percentage of the graph each label is. Returns a list of tuples
@@ -115,64 +164,152 @@ class PieGraph(object):
 		return str(self.calculate_percent())
 
 class input_menu(object):
-	'''Creates a Tkinter screen for the user to input data'''
-	def __init__(self, pg, view):
+	"""Creates the menu for wither modifying a slice or addinga  slice"""
+	def __init__(self, pg, view, modifylabel=None,repeat=1):
+		"""Creates a new TK window. Depending on whether modifylabel has a value or not, it
+			will make a window for modification or adding"""
 		self.main_window = t.Tk()
+		self.main_window.title('Input Data')
+		x=480 if modifylabel==None else 350
+		self.main_window.geometry('+{}+500'.format(x))
 
+		#attributes
+		res_func = self.add if modifylabel==None else self.modify
+		self.num_iter=repeat
+		self.pg = pg
+		self.view=view
+
+		#variables gathered from window
 		self.frame = t.Frame(self.main_window)
-		self.name_var = t.StringVar()
+		if modifylabel==None:
+			self.name_var = t.StringVar()
+		else:
+			self.name_var = modifylabel
 		self.val_var = t.DoubleVar()
 
-		self.tbox = t.Entry(self.frame, width=7, textvariable=self.name_var, text = 'Name: ')
-		self.val = t.Entry(self.frame, width = 4, textvariable=self.val_var, text = 'Value: ')
-		self.bt1 = t.Button(self.frame, text = 'Enter', command = self.add)
+		#actaul containers
+		if modifylabel==None:
+			self.tbox = t.Entry(self.frame, width=10, textvariable=self.name_var, text = 'Name: ')
+		else:
+			self.tbox = t.Label(self.frame, text='Modifying \''+modifylabel+'\'\nInput amount to add to existing value (negative to subtract)\nIf the value becomes less than 0, the entry will be deleted')
+		self.val = t.Entry(self.frame, width = 8, textvariable=self.val_var, text = 'Value: ')
+		self.bt1 = t.Button(self.frame, text = 'Enter', command = res_func)
+		#self.main_window.bind('<Return>', res_func)
 
-		self.tbox.pack()
-		self.val.pack()
-		self.bt1.pack()
-		self.frame.pack()
+		#create window
+		self.tbox.pack(padx=10)
+		self.val.pack(padx=10)
+		self.bt1.pack(padx=10)
+		self.frame.pack(padx=40)
+		
 		t.mainloop()
 
 	def add(self):
-		''' This method is called when the enter button is pressed
+		''' Method for adding slices, repeats if there should be multiple in succession
 
 			If the data is invalid or a variable is missing, it will display an error message
 			Eg: if the user enters nothing for the first data point, if the user enters a string for the value
 		'''
 		try:
-			pg.add_slice(self.name_var.get(), self.val_var.get())
-			pg.update_arcs()
+			self.pg.add_slice(self.name_var.get(), self.val_var.get())
+			self.pg.update_arcs()
 			self.main_window.destroy()
-			view.draw()
-		except:
+			self.view.draw()
+			if self.num_iter>1:
+				input_menu(self.pg,self.view,repeat=self.num_iter-1)
+		except (ValueError, KeyError) as e:
 			tkMessageBox.showwarning(
-            "!!Error!!",
-            "Invalid Data"
-        )
+			"!!Error!!",
+			"Invalid Data\n"+str(e)
+		)
+	def modify(self):
+		"""Method for modifying a slice, will not repeat"""
+		try:
+			self.pg.modify_slice(self.name_var, self.val_var.get())
+			self.pg.update_arcs()
+			self.main_window.destroy()
+			self.view.draw()
+		except (ValueError, KeyError) as e:
+			tkMessageBox.showwarning(
+			"!!Error!!",
+			"Invalid Data\n"+str(e)
+		)
 
-def deal_with_event(event):
-	''' This function takes an event and returns true if the event type is quit
+class init_menu(object):
+	"""Initial window for choosing how many initial data entries to input"""
+	def __init__(self, pg, view):
+		"""Creates a new window that allows the user to input a number for the number of entries to put in initially
+			Calls the input_menu class with the repeat field filled in"""
+		self.main_window = t.Tk()
+		self.main_window.title('Input Data')
+		self.main_window.geometry('+380+500')
 
-		If the key press is enter, it pulls up the data menu
-		If the key press is s, it saves the current graph
+		#class attributes
+		self.pg = pg
+		self.view=view
 
-		Otherwise, it returns false
-	'''
-	if event.type == QUIT:
-		return True
-	if event.type == pygame.KEYDOWN:
-		if event.key == pygame.K_RETURN:
-			input_menu(pg, view)
-		elif event.key == pygame.K_s:
-			pygame.image.save(view.screen, "screenshot.jpeg")
+		#one data point to get
+		self.frame = t.Frame(self.main_window)
+		self.val_var = t.IntVar()
+
+		#creates containers
+		self.tbox = t.Label(self.frame, text='How many data entries would you like to input?')
+		self.val = t.Entry(self.frame, width = 8, textvariable=self.val_var, text = 'Value: ')
+		self.bt1 = t.Button(self.frame, text = 'Enter', command = self.enter_data)
+		#self.main_window.bind('<Return>', res_func)
+
+		#creates frame layout
+		self.tbox.pack(padx=10)
+		self.val.pack(padx=10)
+		self.bt1.pack(padx=10)
+		self.frame.pack(padx=40)
+		
+		t.mainloop()
+
+	def enter_data(self):
+		"""Method that makes the initial call to input_menu"""
+		try:
+			self.main_window.destroy()
+			input_menu(self.pg, self.view,repeat=self.val_var.get())
+			
+		except (ValueError) as e:
+			tkMessageBox.showwarning(
+			"!!Error!!",
+			"INITInvalid Data\n"+str(e)
+		)
 
 if __name__ == '__main__':
 	doctest.testmod()
+	#creates the main Pie Graph object
 	pg = PieGraph()
 	pygame.init()
 	view = Screen(pg, (1000, 1000))
 	running = True
-	menu = input_menu(pg, view)
+	menu = init_menu(pg, view)
+
+	def deal_with_event(event):
+		"""Handles events such as exiting, saving a screenshot, inputting a new entry, and modifying an existing entry"""
+		if event.type == QUIT:
+			return True
+		if event.type == pygame.KEYDOWN:
+			if event.key == pygame.K_RETURN:
+				#input a new entry
+				input_menu(pg, view)
+			elif event.key == pygame.K_s:
+				#remove the commands
+				pygame.draw.rect(view.screen, (0,0,0), (0,0,1000,150))
+				#screenshot
+				pygame.image.save(view.screen, "screenshot.jpeg")
+				#redraw commands
+				view.draw()
+		if event.type == pygame.MOUSEBUTTONDOWN:
+			#modify a slice (if the user clicks in the right place, otherwise this doesn't do anything)
+			pos = pygame.mouse.get_pos()
+			label = view.in_arc(pos[0],pos[1])
+			if label != None:
+				input_menu(pg,view,label)
+
+	#run forever. or quit. if that's what you want.
 	while running:
 		for event in pygame.event.get():
 			running = not deal_with_event(event)
