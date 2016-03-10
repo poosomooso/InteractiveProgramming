@@ -21,20 +21,23 @@ class Screen(object):
 		self.screen = pygame.display.set_mode(size)
 		self.radius = 400
 		self.base_rect = pygame.Rect(100,150,self.radius*2,self.radius*2)
+		self.raw=False
 
 	def draw(self):
 		"""This function redraws the screen and updates it"""
 		self.screen.fill((0,0,0))
 
 		#Creates the command label at the top of the screen
-		font = pygame.font.Font('DINOT-Bold.otf',35)
-		commands_line1 = font.render('Press \'ENTER\' to add a data entry',True,(255,255,255))
+		font = pygame.font.Font('DINOT-Bold.otf',30)
+		commands_line1 = font.render('Press \'ENTER\' to add a sdata entry',True,(255,255,255))
 		commands_line2 = font.render('Click on a slice to modify it\'s existing value',True,(255,255,255))
 		commands_line3 = font.render('Press \'S\' to save a screenshot',True,(255,255,255))
+		commands_line4 = font.render('Press \'V\' to see data values',True,(255,255,255))
 
 		self.screen.blit(commands_line1,(10,10))
-		self.screen.blit(commands_line2,(10,50))
-		self.screen.blit(commands_line3,(10,90))
+		self.screen.blit(commands_line2,(10,45))
+		self.screen.blit(commands_line3,(10,80))
+		self.screen.blit(commands_line4,(10,115))
 
 		#draw slices
 		for arc in self.model.get_arcs():
@@ -56,13 +59,23 @@ class Screen(object):
 			#draw slice label
 			font_slice = pygame.font.Font('DINOT-Bold.otf',30)
 			words = font_slice.render(arc['label'],True, (0,0,0))
+			font_raw = pygame.font.Font('DINOT-Bold.otf',20)
+			data = font_raw.render(str(arc['val']),True, (0,0,0))
 
 			pos = (cx + int(self.radius*cos((arc['start_angle']+arc['stop_angle'])/2.0)/2) - words.get_width()/2,
 					cy - int(self.radius*sin((arc['start_angle']+arc['stop_angle'])/2.0)/2) - words.get_height()/2)
 			pygame.draw.rect(self.screen, (col[0]+20,col[1]+20,col[2]+20), (pos[0],pos[1],words.get_width(),words.get_height()))
-			
 			self.screen.blit(words,pos)
+
+			if self.raw:
+				pygame.draw.rect(self.screen, (col[0]+20,col[1]+20,col[2]+20), (pos[0],pos[1]+40,data.get_width(),data.get_height()))
+				self.screen.blit(data,(pos[0],pos[1]+40))
+
 		pygame.display.update()
+
+	def set_raw(self,b):
+		self.raw=b
+		self.draw()
 
 	def in_arc(self,x,y):
 		"""Determines which slice the point is in, with x and y as coordinates in the screen.
@@ -150,6 +163,7 @@ class PieGraph(object):
 			d['label'] = t[0]
 			d['start_angle']=curr_angle
 			d['stop_angle']=curr_angle+(2*pi*t[1])
+			d['val'] = self.data[t[0]]
 			curr_angle = d['stop_angle']
 			self.arcs.append(d)
 		self.arcs[-1]['stop_angle']=5*pi/2
@@ -302,6 +316,8 @@ if __name__ == '__main__':
 				pygame.image.save(view.screen, "screenshot.jpeg")
 				#redraw commands
 				view.draw()
+			elif event.key == pygame.K_v:
+				view.set_raw(not view.raw)
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			#modify a slice (if the user clicks in the right place, otherwise this doesn't do anything)
 			pos = pygame.mouse.get_pos()
