@@ -11,7 +11,7 @@ import tkMessageBox
 
 
 class Screen(object):
-	"""has a screen, takes in models to draw, keyboard control, if applicable"""
+	"""Creates the screen and defines base variables for the arcs"""
 	def __init__(self, model, size):
 		self.model = model
 		self.screen = pygame.display.set_mode(size)
@@ -19,6 +19,7 @@ class Screen(object):
 		self.base_rect = pygame.Rect(100,100,self.radius*2,self.radius*2)
 
 	def draw(self):
+		"""This function redraws the screen and updates it"""
 		self.screen.fill((0,0,0))
 		for arc in self.model.get_arcs():
 			col = arc['color']
@@ -41,8 +42,6 @@ class Screen(object):
 			pygame.draw.rect(self.screen, (col[0]+20,col[1]+20,col[2]+20), (pos[0],pos[1],words.get_width(),words.get_height()))
 			
 			self.screen.blit(words,pos)
-
-		pygame.display.update()
 		pygame.display.update()
 
 class PieGraph(object):
@@ -116,6 +115,7 @@ class PieGraph(object):
 		return str(self.calculate_percent())
 
 class input_menu(object):
+	'''Creates a Tkinter screen for the user to input data'''
 	def __init__(self, pg, view):
 		self.main_window = t.Tk()
 
@@ -134,6 +134,11 @@ class input_menu(object):
 		t.mainloop()
 
 	def add(self):
+		''' This method is called when the enter button is pressed
+
+			If the data is invalid or a variable is missing, it will display an error message
+			Eg: if the user enters nothing for the first data point, if the user enters a string for the value
+		'''
 		try:
 			pg.add_slice(self.name_var.get(), self.val_var.get())
 			pg.update_arcs()
@@ -146,6 +151,13 @@ class input_menu(object):
         )
 
 def deal_with_event(event):
+	''' This function takes an event and returns true if the event type is quit
+
+		If the key press is enter, it pulls up the data menu
+		If the key press is s, it saves the current graph
+
+		Otherwise, it returns false
+	'''
 	if event.type == QUIT:
 		return True
 	if event.type == pygame.KEYDOWN:
@@ -164,4 +176,4 @@ if __name__ == '__main__':
 	while running:
 		for event in pygame.event.get():
 			running = not deal_with_event(event)
-		time.sleep(float(1/60))
+		time.sleep(float(1/30))
